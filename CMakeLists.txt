@@ -80,6 +80,7 @@ endif()
 #//////////////////////////
 
 add_executable(minimal WIN32 MACOSX_BUNDLE src/minimal.cc ${src_extra})
+add_executable(opengl_controls WIN32 MACOSX_BUNDLE src/opengl_controls.cc ${src_extra})
 
 #//////////////////////////
 #LINUX
@@ -101,7 +102,7 @@ endif()
 set(lib_dep ${lib_dep})
 
 if (MSVC)
-  set(lib_dep ${lib_dep} wxbase32ud wxmsw32ud_core wxmsw32ud_webview wxbase32ud_net wxpngd wxzlibd wxregexud wxmsw32ud_html)
+  set(lib_dep ${lib_dep} wxbase32ud wxmsw32ud_core wxmsw32ud_webview wxbase32ud_net wxpngd wxzlibd wxregexud wxmsw32ud_html wxmsw32ud_gl)
   set(lib_dep ${lib_dep} odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib ws2_32.lib)
 endif()
 
@@ -130,8 +131,10 @@ if(APPLE)
 endif()
 
 target_link_libraries(minimal ${lib_dep})
+target_link_libraries(opengl_controls ${lib_dep})
 if (MSVC)
   set_target_properties(minimal PROPERTIES LINK_FLAGS "/SubSystem:\"Windows\"" VS_DPI_AWARE "ON")
+  set_target_properties(opengl_controls PROPERTIES LINK_FLAGS "/SubSystem:\"Windows\"" VS_DPI_AWARE "ON")
 endif()
 
 if(APPLE)
@@ -142,7 +145,7 @@ if(APPLE)
       MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/build/ext/wxWidgets-3.2.8/samples/Info.plist.in"
       RESOURCE "${CMAKE_SOURCE_DIR}/build/ext/wxWidgets-3.2.8/src/osx/carbon/wxmac.icns")
   endif()
-  set_target_properties(minimal PROPERTIES
+  set_target_properties(opengl_controls PROPERTIES
     MACOSX_BUNDLE_ICON_FILE wxmac.icns
     MACOSX_BUNDLE_LONG_VERSION_STRING "${VERSION}"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${VERSION}"
@@ -152,5 +155,5 @@ if(APPLE)
     )
 endif()
 
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT minimal)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT opengl_controls)
 
