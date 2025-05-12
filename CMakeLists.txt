@@ -82,17 +82,7 @@ endif()
 add_executable(minimal WIN32 MACOSX_BUNDLE src/minimal.cc ${src_extra})
 add_executable(opengl_controls WIN32 MACOSX_BUNDLE src/opengl_controls.cc ${src_extra})
 
-#//////////////////////////
-#LINUX
-#order of the link libraries matters; pthread dl ${ODBC_LIBRARY} must be last
-#//////////////////////////
 
-if(LINUX)
-  set(lib_dep ${lib_dep} pthread dl)
-  find_program(LSB_RELEASE_EXEC lsb_release)
-  execute_process(COMMAND ${LSB_RELEASE_EXEC} -is OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
-  message(STATUS "Building in " ${LSB_RELEASE_ID_SHORT})
-endif()
 
 #//////////////////////////
 #link with libraries
@@ -108,6 +98,7 @@ endif()
 
 if (LINUX)
   set(lib_dep ${lib_dep} wx_gtk3u_xrc-3.2 wx_gtk3u_qa-3.2 wx_baseu_net-3.2 wx_gtk3u_html-3.2 wx_gtk3u_core-3.2 wx_baseu_xml-3.2 wx_baseu-3.2)
+  set(lib_dep ${lib_dep} wx_gtk3u_gl-3.2 GL wayland-client wayland-egl EGL GLESv2)
   set(lib_dep ${lib_dep} SM ICE X11 Xext Xtst xkbcommon)
   set(lib_dep ${lib_dep} gtk-3 gdk-3 pangocairo-1.0 pango-1.0 harfbuzz atk-1.0 cairo-gobject cairo gdk_pixbuf-2.0)
   set(lib_dep ${lib_dep} gio-2.0 gobject-2.0 glib-2.0)
@@ -128,6 +119,18 @@ if(APPLE)
   find_library(IOKIT IOKit)
   find_library(WEBKIT WebKit)
   set(lib_dep ${lib_dep} ${COREFOUNDATION} ${SECURITY} ${CARBON} ${COCOA} ${IOKIT} ${WEBKIT})
+endif()
+
+#//////////////////////////
+#LINUX
+#order of the link libraries matters; pthread dl must be last
+#//////////////////////////
+
+if(LINUX)
+  set(lib_dep ${lib_dep} pthread dl)
+  find_program(LSB_RELEASE_EXEC lsb_release)
+  execute_process(COMMAND ${LSB_RELEASE_EXEC} -is OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
+  message(STATUS "Building in " ${LSB_RELEASE_ID_SHORT})
 endif()
 
 target_link_libraries(minimal ${lib_dep})
