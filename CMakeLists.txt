@@ -81,8 +81,19 @@ endif()
 
 add_executable(minimal WIN32 MACOSX_BUNDLE src/minimal.cc ${src_extra})
 add_executable(opengl_controls WIN32 MACOSX_BUNDLE src/opengl_controls.cc ${src_extra})
+add_executable(button WIN32 MACOSX_BUNDLE src/button.cc ${src_extra})
 
+#//////////////////////////
+#LINUX
+#order of the link libraries matters; pthread dl ${ODBC_LIBRARY} must be last
+#//////////////////////////
 
+if(LINUX)
+  set(lib_dep ${lib_dep} pthread dl)
+  find_program(LSB_RELEASE_EXEC lsb_release)
+  execute_process(COMMAND ${LSB_RELEASE_EXEC} -is OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
+  message(STATUS "Building in " ${LSB_RELEASE_ID_SHORT})
+endif()
 
 #//////////////////////////
 #link with libraries
@@ -121,23 +132,13 @@ if(APPLE)
   set(lib_dep ${lib_dep} ${COREFOUNDATION} ${SECURITY} ${CARBON} ${COCOA} ${IOKIT} ${WEBKIT})
 endif()
 
-#//////////////////////////
-#LINUX
-#order of the link libraries matters; pthread dl must be last
-#//////////////////////////
-
-if(LINUX)
-  set(lib_dep ${lib_dep} pthread dl)
-  find_program(LSB_RELEASE_EXEC lsb_release)
-  execute_process(COMMAND ${LSB_RELEASE_EXEC} -is OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
-  message(STATUS "Building in " ${LSB_RELEASE_ID_SHORT})
-endif()
-
 target_link_libraries(minimal ${lib_dep})
 target_link_libraries(opengl_controls ${lib_dep})
+target_link_libraries(button ${lib_dep})
 if (MSVC)
   set_target_properties(minimal PROPERTIES LINK_FLAGS "/SubSystem:\"Windows\"" VS_DPI_AWARE "ON")
   set_target_properties(opengl_controls PROPERTIES LINK_FLAGS "/SubSystem:\"Windows\"" VS_DPI_AWARE "ON")
+  set_target_properties(button PROPERTIES LINK_FLAGS "/SubSystem:\"Windows\"" VS_DPI_AWARE "ON")
 endif()
 
 if(APPLE)
@@ -159,4 +160,10 @@ if(APPLE)
 endif()
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT opengl_controls)
+
+#//////////////////////////
+# copy PNG icon to binary location 
+#//////////////////////////
+
+file(COPY "${CMAKE_SOURCE_DIR}/resources/button_122.png" DESTINATION ${CMAKE_BINARY_DIR})
 

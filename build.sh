@@ -13,7 +13,7 @@ popd
 popd
 
 pushd build
-cmake .. --fresh
+cmake .. 
 cmake --build .
 popd
 
