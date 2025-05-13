@@ -2,6 +2,12 @@
 #include "wx/wx.h"
 #include "sample.xpm"
 #include <wx/glcanvas.h>
+#include <wx/splitter.h>
+#include <wx/panel.h>
+#include <wx/checkbox.h>
+#include <wx/sizer.h>
+#include <wx/stattext.h>
+#include <wx/textctrl.h>
 
 #if defined(__WXMAC__)
 #ifdef __DARWIN__
@@ -15,6 +21,32 @@
 #  include <GL/gl.h>
 #  include <GL/glu.h>
 #endif
+
+enum
+{
+  ID_CHECKBOX = wxID_HIGHEST + 1
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// PanelInput
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class PanelInput : public wxPanel
+{
+public:
+  PanelInput(wxWindow* parent);
+
+private:
+  wxSlider* slider;
+  wxTextCtrl* text_ctrl;
+  wxCheckBox* check_box;
+
+  void OnSliderChange(wxCommandEvent& event);
+  void OnCheckBox(wxCommandEvent& event);
+
+  wxDECLARE_EVENT_TABLE();
+};
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 // GLCanvasControls
@@ -45,17 +77,6 @@ private:
   wxDECLARE_EVENT_TABLE();
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-// wxAppGLControls
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class wxAppGLControls : public wxApp
-{
-public:
-  virtual bool OnInit() wxOVERRIDE;
-};
-
-wxIMPLEMENT_APP(wxAppGLControls);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 // wxFrameGLControls
@@ -70,14 +91,30 @@ public:
   virtual ~wxFrameGLControls();
 
   GLCanvasControls* gl_canvas;
+  PanelInput* panel_input;
+  wxSplitterWindow* splitter;
+
+  void UpdateLayout();
+  bool panel_visible;
+
 private:
   wxDECLARE_EVENT_TABLE();
 };
 
-wxBEGIN_EVENT_TABLE(wxFrameGLControls, wxFrame)
-EVT_MENU(wxID_EXIT, wxFrameGLControls::OnQuit)
-EVT_MENU(wxID_ABOUT, wxFrameGLControls::OnAbout)
-wxEND_EVENT_TABLE()
+wxFrameGLControls* frame_main;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// wxAppGLControls
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class wxAppGLControls : public wxApp
+{
+public:
+  virtual bool OnInit() wxOVERRIDE;
+};
+
+wxIMPLEMENT_APP(wxAppGLControls);
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 // wxAppGLControls::OnInit()
@@ -93,9 +130,9 @@ bool wxAppGLControls::OnInit()
   // ensure wxImage PNG handler is initialized
   wxImage::AddHandler(new wxPNGHandler);
 
-  wxFrameGLControls* frame = new wxFrameGLControls("OpenGL controls");
-  frame->Show(true);
-  frame->SetSize(400, 400, 1000, 700);
+  frame_main = new wxFrameGLControls("OpenGL controls");
+  frame_main->Maximize(true);
+  frame_main->Show(true);
   return true;
 }
 
@@ -103,8 +140,13 @@ bool wxAppGLControls::OnInit()
 // wxFrameGLControls::wxFrameGLControls
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+wxBEGIN_EVENT_TABLE(wxFrameGLControls, wxFrame)
+EVT_MENU(wxID_EXIT, wxFrameGLControls::OnQuit)
+EVT_MENU(wxID_ABOUT, wxFrameGLControls::OnAbout)
+wxEND_EVENT_TABLE()
+
 wxFrameGLControls::wxFrameGLControls(const wxString& title)
-  : wxFrame(NULL, wxID_ANY, title)
+  : wxFrame(NULL, wxID_ANY, title), panel_visible(true)
 {
   SetIcon(wxICON(sample));
   wxMenu* menu_file = new wxMenu;
@@ -118,7 +160,18 @@ wxFrameGLControls::wxFrameGLControls(const wxString& title)
   CreateStatusBar(2);
   SetStatusText("Ready");
 
-  gl_canvas = new GLCanvasControls(this);
+  const int height_canvas = 400;
+
+  splitter = new wxSplitterWindow(this);
+  splitter->SetSashInvisible(true);
+
+  gl_canvas = new GLCanvasControls(splitter);
+  gl_canvas->SetMinSize(wxSize(500, height_canvas));
+
+  panel_input = new PanelInput(splitter);
+  panel_input->SetMinSize(wxSize(500, 200));
+
+  splitter->SplitVertically(gl_canvas, panel_input);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -131,7 +184,7 @@ wxFrameGLControls::~wxFrameGLControls()
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-//wxFrameGLControls::OnQuit
+// OnQuit
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void wxFrameGLControls::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -140,11 +193,22 @@ void wxFrameGLControls::OnQuit(wxCommandEvent& WXUNUSED(event))
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-//wxFrameGLControls::OnAbout
+// OnAbout
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void wxFrameGLControls::OnAbout(wxCommandEvent& WXUNUSED(event))
 {
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// UpdateLayout
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void wxFrameGLControls::UpdateLayout()
+{
+  panel_visible = !panel_visible;
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -158,7 +222,7 @@ wxEND_EVENT_TABLE()
 
 GLCanvasControls::GLCanvasControls(wxWindow* parent)
   : wxGLCanvas(parent), texture_id(0), button_x(0.0f), button_y(0.0f),
-  button_width(0.2f), button_height(0.4f)
+  button_width(0.4f), button_height(0.4f)
 {
   gl_context = new wxGLContext(this);
 
@@ -315,8 +379,65 @@ void GLCanvasControls::OnMouseUp(wxMouseEvent& event)
     y <= button_y + button_height / 2.0f)
   {
     wxLogDebug("%f, %f", x, y);
+
+    frame_main->UpdateLayout();
   }
 
 
   Refresh();
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//PanelInput::PanelInput
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+wxBEGIN_EVENT_TABLE(PanelInput, wxPanel)
+EVT_SLIDER(wxID_ANY, PanelInput::OnSliderChange)
+EVT_CHECKBOX(ID_CHECKBOX, PanelInput::OnCheckBox)
+wxEND_EVENT_TABLE()
+
+PanelInput::PanelInput(wxWindow* parent)
+  : wxPanel(parent, wxID_ANY)
+{
+  wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
+  wxStaticText* text = new wxStaticText(this, wxID_ANY, "Adjust Value:");
+  sizer->Add(text, 0, wxALL, 5);
+
+  slider = new wxSlider(this, wxID_ANY, 50, 0, 100, wxDefaultPosition, wxDefaultSize,
+    wxSL_HORIZONTAL | wxSL_LABELS);
+  sizer->Add(slider, 0, wxEXPAND | wxALL, 5);
+
+  text_ctrl = new wxTextCtrl(this, wxID_ANY, wxString::Format("%d", slider->GetValue()),
+    wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+  sizer->Add(text_ctrl, 0, wxEXPAND | wxALL, 5);
+
+  check_box = new wxCheckBox(this, ID_CHECKBOX, "Option");
+  check_box->SetValue(true);
+  sizer->Add(check_box, 0, wxALL, 5);
+
+  SetSizer(sizer);
+  sizer->Fit(this);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// OnSliderChange
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void PanelInput::OnSliderChange(wxCommandEvent& event)
+{
+  int value = slider->GetValue();
+  text_ctrl->SetValue(wxString::Format("%d", value));
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// OnCheckBox
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void PanelInput::OnCheckBox(wxCommandEvent& event)
+{
+
+}
+
+
