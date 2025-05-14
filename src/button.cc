@@ -22,11 +22,12 @@
 #  include <GL/glu.h>
 #endif
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-// global variable wxFrameGLControls* frame_main controls access to the main frame
+// global variable wxFrameGLControls* frame_main controls main frame access to the other classes , like the OpenGL canvas
+// and the input panel 
+// check box and slider in the panel control the triangle actions: movement and visibility
+// OpenGL texture button controls the panel visibility
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 enum
 {
@@ -52,7 +53,6 @@ private:
 
   wxDECLARE_EVENT_TABLE();
 };
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 // GLCanvasControls
@@ -84,6 +84,8 @@ public:
 
   float triangle_x; // position of triangle
   void move_triangle();
+  void toggle_triangle();
+  bool triangle_visible;
 
   void Render();
 
@@ -91,7 +93,6 @@ private:
   wxGLContext* gl_context;
   wxDECLARE_EVENT_TABLE();
 };
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 // wxFrameGLControls
@@ -128,7 +129,6 @@ public:
 };
 
 wxIMPLEMENT_APP(wxAppGLControls);
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 // wxAppGLControls::OnInit()
@@ -213,7 +213,7 @@ void wxFrameGLControls::OnQuit(wxCommandEvent& WXUNUSED(event))
 
 void wxFrameGLControls::OnAbout(wxCommandEvent& WXUNUSED(event))
 {
-
+  wxMessageBox("OpenGL demo", "Pedro Vicente, 2025", wxOK | wxICON_INFORMATION, this);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -226,7 +226,6 @@ void wxFrameGLControls::UpdateLayout()
 
   panel_input->Show(panel_visible);
   Layout();
-
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -240,7 +239,7 @@ wxEND_EVENT_TABLE()
 
 GLCanvasControls::GLCanvasControls(wxWindow* parent)
   : wxGLCanvas(parent), texture_id(0), button_x(0.0f), button_y(0.0f),
-  button_width(0.4f), button_height(0.4f), triangle_x(-1.0f)
+  button_width(0.4f), button_height(0.4f), triangle_x(-1.0f), triangle_visible(true)
 {
   gl_context = new wxGLContext(this);
 
@@ -322,18 +321,21 @@ void GLCanvasControls::Render()
   // triangle
   /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  glTranslatef(triangle_x, 0.0f, 0.0f);
+  if (triangle_visible)
+  {
+    glTranslatef(triangle_x, 0.0f, 0.0f);
 
-  glBegin(GL_TRIANGLES);
-  glColor3f(1.0f, 0.0f, 0.0f);  // red
-  glVertex2f(0.0f, 0.5f);       // top
+    glBegin(GL_TRIANGLES);
+    glColor3f(1.0f, 0.0f, 0.0f);  // red
+    glVertex2f(0.0f, 0.5f);       // top
 
-  glColor3f(0.0f, 1.0f, 0.0f);  // green
-  glVertex2f(-0.5f, -0.5f);     // bottom left
+    glColor3f(0.0f, 1.0f, 0.0f);  // green
+    glVertex2f(-0.5f, -0.5f);     // bottom left
 
-  glColor3f(0.0f, 0.0f, 1.0f);  // blue
-  glVertex2f(0.5f, -0.5f);      // bottom right
-  glEnd();
+    glColor3f(0.0f, 0.0f, 1.0f);  // blue
+    glVertex2f(0.5f, -0.5f);      // bottom right
+    glEnd();
+  }
 
 }
 
@@ -454,6 +456,16 @@ void GLCanvasControls::move_triangle()
   Refresh(false);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// toggle_triangle
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void GLCanvasControls::toggle_triangle()
+{
+  triangle_visible = !triangle_visible;
+  Refresh(false);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 //PanelInput::PanelInput
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -468,7 +480,7 @@ PanelInput::PanelInput(wxWindow* parent)
 {
   wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
-  wxStaticText* text = new wxStaticText(this, wxID_ANY, "Adjust Value:");
+  wxStaticText* text = new wxStaticText(this, wxID_ANY, "Move triangle");
   sizer->Add(text, 0, wxALL, 5);
 
   slider = new wxSlider(this, wxID_ANY, 50, 0, 100, wxDefaultPosition, wxDefaultSize,
@@ -479,7 +491,7 @@ PanelInput::PanelInput(wxWindow* parent)
     wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
   sizer->Add(text_ctrl, 0, wxEXPAND | wxALL, 5);
 
-  check_box = new wxCheckBox(this, ID_CHECKBOX, "Option");
+  check_box = new wxCheckBox(this, ID_CHECKBOX, "Triangle visible");
   check_box->SetValue(true);
   sizer->Add(check_box, 0, wxALL, 5);
 
@@ -506,7 +518,7 @@ void PanelInput::OnSliderChange(wxCommandEvent& event)
 
 void PanelInput::OnCheckBox(wxCommandEvent& event)
 {
-
+  frame_main->gl_canvas->toggle_triangle();
 }
 
 
