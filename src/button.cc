@@ -92,7 +92,6 @@ public:
 
   GLCanvasControls* gl_canvas;
   PanelInput* panel_input;
-  wxSplitterWindow* splitter;
 
   void UpdateLayout();
   bool panel_visible;
@@ -160,18 +159,19 @@ wxFrameGLControls::wxFrameGLControls(const wxString& title)
   CreateStatusBar(2);
   SetStatusText("Ready");
 
-  const int height_canvas = 400;
+  wxPanel* panel = new wxPanel(this, wxID_ANY);
+  wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
-  splitter = new wxSplitterWindow(this);
-  splitter->SetSashInvisible(true);
+  panel_input = new PanelInput(panel);
+  panel_input->SetBackgroundColour(wxColour(200, 230, 250));
 
-  gl_canvas = new GLCanvasControls(splitter);
-  gl_canvas->SetMinSize(wxSize(500, height_canvas));
+  gl_canvas = new GLCanvasControls(panel);
 
-  panel_input = new PanelInput(splitter);
-  panel_input->SetMinSize(wxSize(500, 200));
+  sizer->Add(panel_input, 1, wxALL | wxEXPAND, 10);
+  sizer->Add(gl_canvas, 1, wxALL | wxEXPAND, 10);
 
-  splitter->SplitVertically(gl_canvas, panel_input);
+  panel->SetSizer(sizer);
+  sizer->Layout();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -208,6 +208,9 @@ void wxFrameGLControls::OnAbout(wxCommandEvent& WXUNUSED(event))
 void wxFrameGLControls::UpdateLayout()
 {
   panel_visible = !panel_visible;
+
+  panel_input->Show(panel_visible);
+  Layout();
 
 }
 
