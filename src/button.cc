@@ -72,6 +72,14 @@ public:
   float button_width;
   float button_height;
 
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
+  // moving triangle
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  float triangle_x; // position of triangle
+
+  void Render();
+
 private:
   wxGLContext* gl_context;
   wxDECLARE_EVENT_TABLE();
@@ -225,7 +233,7 @@ wxEND_EVENT_TABLE()
 
 GLCanvasControls::GLCanvasControls(wxWindow* parent)
   : wxGLCanvas(parent), texture_id(0), button_x(0.0f), button_y(0.0f),
-  button_width(0.4f), button_height(0.4f)
+  button_width(0.4f), button_height(0.4f), triangle_x(-1.0f)
 {
   gl_context = new wxGLContext(this);
 
@@ -251,6 +259,21 @@ void GLCanvasControls::OnPaint(wxPaintEvent& WXUNUSED(event))
 {
   wxPaintDC dc(this);
   SetCurrent(*gl_context);
+
+  Render();
+
+  SwapBuffers();
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// Render
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void GLCanvasControls::Render()
+{
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
+  // button with texture
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glLoadIdentity();
@@ -287,7 +310,24 @@ void GLCanvasControls::OnPaint(wxPaintEvent& WXUNUSED(event))
   glEnd();
 
   glDisable(GL_TEXTURE_2D);
-  SwapBuffers();
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
+  // triangle
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  glTranslatef(triangle_x, 0.0f, 0.0f);
+
+  glBegin(GL_TRIANGLES);
+  glColor3f(1.0f, 0.0f, 0.0f);  // red
+  glVertex2f(0.0f, 0.5f);       // top
+
+  glColor3f(0.0f, 1.0f, 0.0f);  // green
+  glVertex2f(-0.5f, -0.5f);     // bottom left
+
+  glColor3f(0.0f, 0.0f, 1.0f);  // blue
+  glVertex2f(0.5f, -0.5f);      // bottom right
+  glEnd();
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -308,6 +348,8 @@ void GLCanvasControls::OnSize(wxSizeEvent& event)
 
   const wxSize size = event.GetSize() * GetContentScaleFactor();
   glViewport(0, 0, size.x, size.y);
+
+  Refresh(false);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
